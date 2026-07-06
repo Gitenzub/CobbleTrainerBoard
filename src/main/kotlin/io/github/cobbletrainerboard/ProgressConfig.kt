@@ -12,14 +12,22 @@ import java.nio.file.StandardCopyOption
 import java.util.Locale
 
 object ProgressConfig {
-    private const val CONFIG_VERSION = 4
+    private const val CONFIG_VERSION = 5
     private val gson = GsonBuilder().setPrettyPrinting().create()
     private val configPath: Path = Paths.get("config", "cobbletrainerboard.json")
     @Volatile private var cached: BoardConfig? = null
 
     data class BoardConfig(
         val regions: List<RegionRule>,
-        val requireRegionInMatch: Boolean
+        val requireRegionInMatch: Boolean,
+        val tab: TabConfig
+    )
+
+    data class TabConfig(
+        val shinyDisplayMode: String,
+        val includeRadiant: Boolean,
+        val formatTotal: String,
+        val formatByType: String
     )
 
     data class RegionRule(
@@ -73,11 +81,28 @@ object ProgressConfig {
                 val backupPath = configPath.resolveSibling("cobbletrainerboard.v${configVersion}.backup.json")
                 Files.copy(configPath, backupPath, StandardCopyOption.REPLACE_EXISTING)
             }
-            Files.writeString(configPath, defaultConfigJson(), StandardCharsets.UTF_8)
-            json = JsonParser.parseString(defaultConfigJson()).asJsonObject
+            json = migrate(json)
+            Files.writeString(configPath, gson.toJson(json), StandardCharsets.UTF_8)
         }
 
         return parse(json)
+    }
+
+    private fun migrate(source: JsonObject): JsonObject {
+        val migrated = source.deepCopy()
+        val defaultTab = defaultTabJson()
+        val tab = if (migrated.has("tab") && migrated.get("tab").isJsonObject) {
+            migrated.getAsJsonObject("tab")
+        } else {
+            JsonObject().also { migrated.add("tab", it) }
+        }
+        defaultTab.entrySet().forEach { entry ->
+            if (!tab.has(entry.key)) {
+                tab.add(entry.key, entry.value)
+            }
+        }
+        migrated.addProperty("config_version", CONFIG_VERSION)
+        return migrated
     }
 
     private fun parse(root: JsonObject): BoardConfig {
@@ -97,9 +122,26 @@ object ProgressConfig {
             RegionRule(key, display, requiredGyms, gyms)
         } ?: emptyList()
 
+        val fallback = JsonParser.parseString(defaultConfigJson()).asJsonObject
+        val tabObject = root.getAsJsonObject("tab") ?: fallback.getAsJsonObject("tab")
+        val rawMode = tabObject.get("shiny_display_mode")?.asString?.lowercase(Locale.ROOT) ?: "total"
+        val shinyDisplayMode = when (rawMode) {
+            "by_type", "by-type", "bytype", "types", "detail", "detailed" -> "by_type"
+            else -> "total"
+        }
+        val tab = TabConfig(
+            shinyDisplayMode = shinyDisplayMode,
+            includeRadiant = tabObject.get("include_radiant")?.asBoolean ?: true,
+            formatTotal = tabObject.get("format_total")?.asString
+                ?: "✨ %shiny_display% | %progress_short% | Vue:%dex_seen% Capt:%dex_caught%",
+            formatByType = tabObject.get("format_by_type")?.asString
+                ?: "✨ %shiny_display% | %progress_short% | Vue:%dex_seen% Capt:%dex_caught%"
+        )
+
         return BoardConfig(
-            regions = regions.ifEmpty { parse(JsonParser.parseString(defaultConfigJson()).asJsonObject).regions },
-            requireRegionInMatch = requireRegionInMatch
+            regions = regions.ifEmpty { parse(fallback).regions },
+            requireRegionInMatch = requireRegionInMatch,
+            tab = tab
         )
     }
 
@@ -122,12 +164,26 @@ object ProgressConfig {
         .replace(Regex("[^a-z0-9:_/.-]+"), "_")
         .trim('_')
 
+
+    private fun defaultTabJson(): JsonObject {
+        val tab = JsonObject()
+        tab.addProperty("comment", "Configuration de l'affichage TAB. Utilise %cobbletrainerboard:tab_line% dans StyledPlayerList, puis change shiny_display_mode ici sans rebuild le mod. Valeurs: total ou by_type.")
+        tab.addProperty("shiny_display_mode", "total")
+        tab.addProperty("include_radiant", true)
+        tab.addProperty("format_total", "✨ %shiny_display% | %progress_short% | Vue:%dex_seen% Capt:%dex_caught%")
+        tab.addProperty("format_by_type", "✨ %shiny_display% | %progress_short% | Vue:%dex_seen% Capt:%dex_caught%")
+        return tab
+    }
+
     private fun defaultConfigJson(): String {
         val root = JsonObject()
         root.addProperty("config_version", CONFIG_VERSION)
         root.addProperty("mode", "advancements_only")
         root.addProperty("require_region_in_match", true)
-        root.addProperty("comment", "CobbleTrainerBoard lit uniquement les advancements/succes de gyms completes. Les 4 premieres regions utilisent les IDs exacts des datapacks custom Cobblemon gym datapackss: Kanto, Johto, Hoenn, Sinnoh. L'ordre force est Kanto -> Johto -> Hoenn -> Sinnoh -> Unys -> Kalos -> Alola -> Galar -> Paldea.")
+        root.addProperty("comment", "CobbleTrainerBoard lit uniquement les advancements/succes de gyms completes. Les 4 premieres regions utilisent les IDs exacts des datapacks custom Cobblemon gyms: Kanto, Johto, Hoenn, Sinnoh. L'ordre force est Kanto -> Johto -> Hoenn -> Sinnoh -> Unys -> Kalos -> Alola -> Galar -> Paldea.")
+
+        root.add("tab", defaultTabJson())
+
         val regions = JsonArray()
 
         fun region(key: String, display: String, gyms: List<DefaultGym>, required: Int = 8) {

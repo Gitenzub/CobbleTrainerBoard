@@ -4,6 +4,7 @@ Use these with StyledPlayerList or another PB4/Text Placeholder API compatible m
 
 ```text
 %cobbletrainerboard:tab_line%
+%cobbletrainerboard:shiny_display%
 %cobbletrainerboard:progress%
 %cobbletrainerboard:progress_short%
 %cobbletrainerboard:region%
@@ -24,5 +25,26 @@ Use these with StyledPlayerList or another PB4/Text Placeholder API compatible m
 Recommended StyledPlayerList `right_text`:
 
 ```json
-"right_text": "<gray>✨</gray><yellow>%cobbletrainerboard:shiny_total%</yellow><dark_gray> | </dark_gray><gold>%cobbletrainerboard:progress_short%</gold><dark_gray> | </dark_gray><gray>Seen:</gray><white>%cobbletrainerboard:dex_seen%</white><gray> Caught:</gray><green>%cobbletrainerboard:dex_caught%</green>"
+"right_text": "%cobbletrainerboard:tab_line%"
+```
+
+`%cobbletrainerboard:tab_line%` is controlled by `config/cobbletrainerboard.json`:
+
+```json
+"tab": {
+  "shiny_display_mode": "total"
+}
+```
+
+Switch to detailed shiny display:
+
+```json
+"shiny_display_mode": "by_type"
+```
+
+No rebuild required; run:
+
+```mcfunction
+/ctb reload
+/styledplayerlist reload
 ```

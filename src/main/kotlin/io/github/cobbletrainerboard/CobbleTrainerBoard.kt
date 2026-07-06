@@ -68,6 +68,9 @@ object CobbleTrainerBoard : ModInitializer {
         registerPlayerPlaceholder("shiny_radiant") { player ->
             Text.literal(CobblemonStatsResolver.resolve(player).shiny.radiant.toString())
         }
+        registerPlayerPlaceholder("shiny_display") { player ->
+            Text.literal(TabDisplayFormatter.shinyDisplay(CobblemonStatsResolver.resolve(player)))
+        }
         registerPlayerPlaceholder("dex_seen") { player ->
             Text.literal(CobblemonStatsResolver.resolve(player).dex.seen.toString())
         }
@@ -75,9 +78,7 @@ object CobbleTrainerBoard : ModInitializer {
             Text.literal(CobblemonStatsResolver.resolve(player).dex.caught.toString())
         }
         registerPlayerPlaceholder("tab_line") { player ->
-            val stats = CobblemonStatsResolver.resolve(player)
-            val progress = ProgressResolver.resolve(player)
-            Text.literal("✨ ${stats.shiny.total} | ${progress.shortText} | Vue ${stats.dex.seen} | Capt ${stats.dex.caught}")
+            Text.literal(TabDisplayFormatter.tabLine(player))
         }
     }
 
@@ -233,6 +234,7 @@ object CobbleTrainerBoard : ModInitializer {
         source.sendMessage(Text.literal("§e/ctb dex catch [joueur]§7 - Pokémon attrapés dans le Pokédex"))
         source.sendMessage(Text.literal("§e/ctb progress [joueur]§7 - progression badge actuelle"))
         source.sendMessage(Text.literal("§e/ctb reload§7 - recharge la config et les caches (admin)"))
+        source.sendMessage(Text.literal("§7TAB: configure config/cobbletrainerboard.json -> tab.shiny_display_mode = total ou by_type"))
     }
 
     private fun sendProgress(source: ServerCommandSource, player: ServerPlayerEntity) {
@@ -292,6 +294,7 @@ object CobbleTrainerBoard : ModInitializer {
         }
         val stats = CobblemonStatsResolver.resolve(player)
         source.sendMessage(Text.literal("${player.name.string} | Shiny ${stats.shiny.total} (C ${stats.shiny.common}, R ${stats.shiny.rare}, E ${stats.shiny.epic}, Rad ${stats.shiny.radiant}) | Dex vus ${stats.dex.seen}, attrapés ${stats.dex.caught}"))
+        source.sendMessage(Text.literal("TAB mode: ${ProgressConfig.get().tab.shinyDisplayMode} | ${TabDisplayFormatter.tabLine(player)}"))
     }
 
     private fun sendAdvancements(source: ServerCommandSource, player: ServerPlayerEntity) {

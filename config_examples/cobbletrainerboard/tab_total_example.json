@@ -1,0 +1,8 @@
+{
+  "tab": {
+    "shiny_display_mode": "total",
+    "include_radiant": true,
+    "format_total": "✨ %shiny_display% | %progress_short% | Vue:%dex_seen% Capt:%dex_caught%",
+    "format_by_type": "✨ %shiny_display% | %progress_short% | Vue:%dex_seen% Capt:%dex_caught%"
+  }
+}
