@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "cobbletrainerboard",
+  "version": "${version}",
+  "name": "CobbleTrainerBoard",
+  "description": "PB4 placeholders and /ctb commands for Cobblemon badge, shiny and Pokédex progression.",
+  "authors": [
+    "CobbleTrainerBoard contributors"
+  ],
+  "contact": {
+    "sources": "https://github.com/your-name/CobbleTrainerBoard",
+    "issues": "https://github.com/your-name/CobbleTrainerBoard/issues"
+  },
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      {
+        "adapter": "kotlin",
+        "value": "io.github.cobbletrainerboard.CobbleTrainerBoard"
+      }
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": "*",
+    "fabric-language-kotlin": "*",
+    "cobblemon": ">=1.7.3"
+  },
+  "recommends": {
+    "placeholder-api": "*",
+    "styledplayerlist": "*"
+  }
+}
